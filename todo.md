@@ -100,11 +100,10 @@
   - 環境変数未設定・ログイン失敗時はエラー終了・ログ
   - 優先: 🟡 重要
 
-- [~] compass / live-course の取得とパース
-  - 認証済みセッションで 2URL を GET、HTML をパースして 2.1 の配列に変換（F01 で GET とマージまで実装済み）
-  - compass: parse-compass.ts 枠のみ（TODO: 実際の HTML に合わせてセレクタ実装）
-  - live-course: parse-live-course.ts 枠のみ（同上）
-  - パース仕様は実際の HTML に合わせて実装（セレクタ等はコメントまたは別ドキュメントで明示）
+- [x] compass / live-course の取得とパース
+  - 同一 Playwright セッションでログイン後に 2URL を開き、描画済み HTML を取得（F01）
+  - parse-compass.ts: table / .event / time[datetime] 等の複数パターンで抽出（cheerio・動的 import）
+  - parse-live-course.ts: 上記に加え location, instructor, notes をクラス名・ラベルから抽出
   - 優先: 🟡 重要
 
 - [x] 2URL 結果のマージと F01 出力
@@ -164,4 +163,4 @@
 
 - 新規タスク追加時は上記形式（チェックボックス、詳細・依存・優先度）で追記する。
 - 日次で進捗確認、週次で完了タスク確認・未完了の再評価を行う。
-- **実装状況**: F01 はログイン・2URL GET・パーサー枠まで実装済み（パースは HTML 仕様に合わせてセレクタ追加が必要）。F03 は Google Calendar API（サービスアカウント）で insert/update/delete 実装済み。`npm run sync` は .env に AINA_*, GOOGLE_CALENDAR_ID, GOOGLE_APPLICATION_CREDENTIALS が必要。
+- **実装状況**: F01 はログイン〜同一 Playwright で compass/live-course 取得・cheerio パースまで一通り実装済み。F03 は Google Calendar API 実装済み。実際の HTML 構造に応じてセレクタの調整が必要な場合あり。

@@ -2,23 +2,24 @@
  * AiNA MyPage フォームログイン（詳細設計 3.1）。
  * ログインページが Next.js 等で JavaScript 描画のため、Playwright でヘッドレスブラウザから Cookie を取得する。
  */
+import type { Page, BrowserContext } from "playwright";
 import { getEnvForFetch } from "@/lib/env";
 
 export type LoginResult = { cookieHeader: string };
 
 /**
- * Playwright でログインページを開き、フォーム入力・送信後に Cookie を取得する。
- * ログイン失敗時はエラーを throw する。
+ * ログイン成功後に同じセッションでコールバックを実行する。
+ * F01 で compass / live-course を開いて HTML 取得するために使用。
  */
-export async function getAinaSession(): Promise<LoginResult> {
+export async function runWithAinaSession<T>(
+  fn: (page: Page, context: BrowserContext) => Promise<T>
+): Promise<T> {
   const env = getEnvForFetch();
   const loginUrl = env.AINA_LOGIN_URL;
   const id = env.AINA_LOGIN_ID;
   const password = env.AINA_LOGIN_PASSWORD;
 
-  // 実行時のみ読み込み（Next ビルド時にバンドルしない）
   const { chromium } = await import("playwright");
-
   const browser = await chromium.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -82,17 +83,24 @@ export async function getAinaSession(): Promise<LoginResult> {
       );
     }
 
+    return await fn(page, context);
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * ログイン後に Cookie のみ取得する（従来の getAinaSession）。
+ */
+export async function getAinaSession(): Promise<LoginResult> {
+  return runWithAinaSession(async (_page, context) => {
     const cookies = await context.cookies();
     const cookieHeader = cookies
       .map((c) => `${c.name}=${c.value}`)
       .join("; ");
-
     if (!cookieHeader) {
       throw new Error("[F01] Login succeeded but no cookies were set");
     }
-
     return { cookieHeader };
-  } finally {
-    await browser.close();
-  }
+  });
 }

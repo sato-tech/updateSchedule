@@ -1,9 +1,9 @@
 /**
  * F01: 掲載スケジュール取得（詳細設計 3）。
- * AiNA MyPage にログインし、compass / live-course の 2URL から取得・パースする。
+ * ログイン後、同じ Playwright セッションで compass / live-course を開き、描画済み HTML をパースする。
  */
 import type { ScheduleEvent } from "@/lib/types/schedule";
-import { getAinaSession } from "@/lib/aina/login";
+import { runWithAinaSession } from "@/lib/aina/login";
 import { getEnvForFetch } from "@/lib/env";
 import { parseCompass } from "@/jobs/parsers/parse-compass";
 import { parseLiveCourse } from "@/jobs/parsers/parse-live-course";
@@ -13,51 +13,36 @@ export type FetchSchedulesResult =
   | { ok: false; error: string };
 
 /**
- * 環境変数で指定された URL にログインし、2URL からイベント一覧を取得する。
- * ログイン失敗・GET 失敗・パース失敗時は { ok: false, error } を返す。
+ * ログインし、compass / live-course を開いてイベント一覧を取得する。
+ * 両ページは JS 描画のため Playwright で描画後に HTML を取得してパースする。
  */
 export async function fetchSchedules(): Promise<FetchSchedulesResult> {
   try {
     const env = getEnvForFetch();
 
-    const { cookieHeader } = await getAinaSession();
+    const { compassHtml, liveCourseHtml } = await runWithAinaSession(
+      async (page, _context) => {
+        await page.goto(env.AINA_SCHEDULE_URL_COMPASS, {
+          waitUntil: "networkidle",
+          timeout: 20000,
+        });
+        const compassHtml = await page.content();
 
-    const [compassRes, liveCourseRes] = await Promise.all([
-      fetch(env.AINA_SCHEDULE_URL_COMPASS, {
-        headers: {
-          Cookie: cookieHeader,
-          "User-Agent": "UpdateSchedule/1.0 (batch)",
-        },
-      }),
-      fetch(env.AINA_SCHEDULE_URL_LIVE_COURSE, {
-        headers: {
-          Cookie: cookieHeader,
-          "User-Agent": "UpdateSchedule/1.0 (batch)",
-        },
-      }),
-    ]);
+        await page.goto(env.AINA_SCHEDULE_URL_LIVE_COURSE, {
+          waitUntil: "networkidle",
+          timeout: 20000,
+        });
+        const liveCourseHtml = await page.content();
 
-    if (!compassRes.ok) {
-      return {
-        ok: false,
-        error: `compass GET failed: ${compassRes.status} ${compassRes.statusText}`,
-      };
-    }
-    if (!liveCourseRes.ok) {
-      return {
-        ok: false,
-        error: `live-course GET failed: ${liveCourseRes.status} ${liveCourseRes.statusText}`,
-      };
-    }
+        return { compassHtml, liveCourseHtml };
+      }
+    );
 
-    const compassHtml = await compassRes.text();
-    const liveCourseHtml = await liveCourseRes.text();
-
-    const compassEvents = parseCompass(compassHtml).map((e) => ({
+    const compassEvents = (await parseCompass(compassHtml)).map((e) => ({
       ...e,
       source: "compass" as const,
     }));
-    const liveCourseEvents = parseLiveCourse(liveCourseHtml).map((e) => ({
+    const liveCourseEvents = (await parseLiveCourse(liveCourseHtml)).map((e) => ({
       ...e,
       source: "live-course" as const,
     }));
