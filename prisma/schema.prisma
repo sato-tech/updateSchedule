@@ -1,0 +1,19 @@
+// Prisma schema (techstack: SQLite, 後に Supabase へ変更想定)
+// 前回取得結果は詳細設計で「ファイル or DB」とあるため、まずは JSON ファイルで実装。
+// 必要に応じて SyncState を使って DB 保存に切り替え可能。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// 前回取得結果を DB に保存する場合用（任意）。現状はファイルストアを使用。
+model SyncState {
+  id       String   @id @default("default")
+  json     String   // PreviousFetchResult を JSON 文字列で保存
+  updatedAt DateTime @updatedAt
+}

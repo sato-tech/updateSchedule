@@ -1,0 +1,14 @@
+# 認証情報・秘密情報（必ずコミットしない）
+.env
+.env.local
+.env.*.local
+
+# 依存関係・ビルド
+node_modules/
+.next/
+out/
+dist/
+
+# ログ・キャッシュ
+*.log
+.cache/
