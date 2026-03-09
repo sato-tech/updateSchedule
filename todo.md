@@ -44,6 +44,16 @@
   - docs/03_基本設計書.md をバッチ型（AiNA MyPage → 前回比較 → Google カレンダー）で更新済み
   - 優先: 🟢 通常
 
+### 動作確認
+
+- [x] 動作確認用テスト画面の追加
+  - `/test` にテストページを追加（表示日時・ステータス表示で実行結果を確認可能）
+  - 優先: 🟢 通常
+
+- [x] AiNA 取得情報の画面表示
+  - `/test/aina` で F01 取得結果を表示（取得結果サマリ・取得元URL・スケジュール一覧）
+  - 優先: 🟢 通常
+
 ### 今後のタスク（ドキュメント・確認）
 
 - [x] 詳細設計書の具体化
@@ -85,15 +95,15 @@
 
 ### F01: 掲載スケジュール取得（JOB-01）
 
-- [ ] AiNA MyPage フォームログイン処理
-  - GET ログインページ → POST ID/パスワード、Cookie 保持、ログイン成功判定
+- [x] AiNA MyPage フォームログイン処理
+  - GET ログインページ → POST ID/パスワード、Cookie 保持、ログイン成功判定（src/lib/aina/login.ts）
   - 環境変数未設定・ログイン失敗時はエラー終了・ログ
   - 優先: 🟡 重要
 
-- [ ] compass / live-course の取得とパース
-  - 認証済みセッションで 2URL を GET、HTML をパースして 2.1 の配列に変換
-  - compass: title, startAt, endAt, sourceId, source 等（場所・講師・備考は不要）
-  - live-course: 上記に加え location, instructor, notes をパース
+- [~] compass / live-course の取得とパース
+  - 認証済みセッションで 2URL を GET、HTML をパースして 2.1 の配列に変換（F01 で GET とマージまで実装済み）
+  - compass: parse-compass.ts 枠のみ（TODO: 実際の HTML に合わせてセレクタ実装）
+  - live-course: parse-live-course.ts 枠のみ（同上）
   - パース仕様は実際の HTML に合わせて実装（セレクタ等はコメントまたは別ドキュメントで明示）
   - 優先: 🟡 重要
 
@@ -155,4 +165,4 @@
 
 - 新規タスク追加時は上記形式（チェックボックス、詳細・依存・優先度）で追記する。
 - 日次で進捗確認、週次で完了タスク確認・未完了の再評価を行う。
-- **実装状況**: プロジェクト基盤・環境変数・型・ストア・F02・同期ジョブ組み立てまで完了。F01（ログイン・パース）と F03（Google Calendar API）はプレースホルダ。`npm run sync` は .env の必須項目（AINA_*, GOOGLE_CALENDAR_ID 等）が揃っている必要あり。
+- **実装状況**: F01 はログイン・2URL GET・パーサー枠まで実装済み。パースは実際の HTML 仕様に合わせて parse-compass.ts / parse-live-course.ts にセレクタを追加する必要あり。F03（Google Calendar API）はプレースホルダ。`npm run sync` は .env の必須項目（AINA_*, GOOGLE_CALENDAR_ID 等）が揃っている必要あり。

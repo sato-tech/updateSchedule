@@ -2,7 +2,21 @@
  * 環境変数スキーマ（Zod）。未設定時は起動時エラー・ログ用。
  * 詳細設計・基本設計の設定項目に準拠。
  */
+import path from "path";
+import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
+
+// プロジェクトルートの .env を明示的に読み込む（Next の読み込みが効かない場合の補完）
+const root = process.cwd();
+loadDotenv({ path: path.resolve(root, ".env") });
+loadDotenv({ path: path.resolve(root, ".env.local") });
+// .env に無い場合は .env.example をフォールバック（.env 未作成でも .env.example の値が使える）
+if (
+  !process.env.AINA_LOGIN_ID ||
+  !process.env.AINA_LOGIN_PASSWORD
+) {
+  loadDotenv({ path: path.resolve(root, ".env.example") });
+}
 
 const envSchema = z.object({
   // AiNA MyPage
@@ -57,21 +71,48 @@ export function getEnv(): Env {
   return cached;
 }
 
-/** バッチ・Cron で必須の項目だけ検証する（Google 認証前など、部分利用用） */
-export function getEnvForFetch(): Pick<
+/** F01（AiNA 取得）用の環境変数のみ。同期ジョブ全体では getEnv() を使用。 */
+export type EnvForFetch = Pick<
   Env,
   | "AINA_LOGIN_URL"
   | "AINA_LOGIN_ID"
   | "AINA_LOGIN_PASSWORD"
   | "AINA_SCHEDULE_URL_COMPASS"
   | "AINA_SCHEDULE_URL_LIVE_COURSE"
-> {
-  const e = getEnv();
-  return {
-    AINA_LOGIN_URL: e.AINA_LOGIN_URL,
-    AINA_LOGIN_ID: e.AINA_LOGIN_ID,
-    AINA_LOGIN_PASSWORD: e.AINA_LOGIN_PASSWORD,
-    AINA_SCHEDULE_URL_COMPASS: e.AINA_SCHEDULE_URL_COMPASS,
-    AINA_SCHEDULE_URL_LIVE_COURSE: e.AINA_SCHEDULE_URL_LIVE_COURSE,
-  };
+>;
+
+const envForFetchSchema = z.object({
+  AINA_LOGIN_URL: z.string().url().default("https://mypage.ai-na.co.jp/login"),
+  AINA_LOGIN_ID: z.string().min(1, "AINA_LOGIN_ID is required"),
+  AINA_LOGIN_PASSWORD: z.string().min(1, "AINA_LOGIN_PASSWORD is required"),
+  AINA_SCHEDULE_URL_COMPASS: z
+    .string()
+    .url()
+    .default("https://mypage.ai-na.co.jp/user/compass"),
+  AINA_SCHEDULE_URL_LIVE_COURSE: z
+    .string()
+    .url()
+    .default("https://mypage.ai-na.co.jp/user/live-course"),
+});
+
+let cachedForFetch: EnvForFetch | null = null;
+
+/**
+ * F01・テスト画面用。AiNA 取得に必要な項目だけ検証する。
+ * GOOGLE_CALENDAR_ID 等は不要。未設定時は throw。
+ */
+export function getEnvForFetch(): EnvForFetch {
+  if (cachedForFetch) return cachedForFetch;
+  const parsed = envForFetchSchema.safeParse(process.env);
+  if (!parsed.success) {
+    const msg = parsed.error.flatten().fieldErrors;
+    console.error("[env] AiNA fetch: invalid or missing:", msg);
+    const hint =
+      ".env または .env.example の AINA_LOGIN_ID と AINA_LOGIN_PASSWORD を設定し、開発サーバーを再起動してください。";
+    throw new Error(
+      `Environment validation failed: ${JSON.stringify(msg)}。${hint}`
+    );
+  }
+  cachedForFetch = parsed.data;
+  return cachedForFetch;
 }
