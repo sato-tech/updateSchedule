@@ -124,16 +124,15 @@
 
 ### F03: Google カレンダー反映（JOB-03）
 
-- [ ] Google Calendar API 認証の組み込み
-  - OAuth2 またはサービスアカウント。トークン・鍵は環境変数で管理
-  - GOOGLE_CALENDAR_ID 未設定・認証失敗時はエラー終了・ログ
+- [x] Google Calendar API 認証の組み込み
+  - サービスアカウント（GOOGLE_APPLICATION_CREDENTIALS で JSON キーファイルのパスを指定）
+  - GOOGLE_CALENDAR_ID 未設定・認証失敗時はエラー終了・ログ（src/jobs/f03-google-calendar.ts）
   - 優先: 🟡 重要
 
-- [ ] toAdd / toUpdate / toDelete の API 実行
+- [x] toAdd / toUpdate / toDelete の API 実行
   - 追加: events.insert。live-course は location・description（講師+備考）を設定、compass は省略
-  - 更新: googleEventIdMap から eventId を取得して events.update。満員時はタイトル/説明のルールに従う（要確認項目で確定後）
-  - 削除: events.delete
-  - 返却 eventId を sourceId と対応付けてマッピングに保持
+  - 更新: googleEventIdMap から eventId を取得して events.update。満員時はタイトルに [満員] を付与
+  - 削除: events.delete。返却 eventId を sourceId と対応付けてマッピングに保持
   - 優先: 🟡 重要
 
 - [x] 前回取得結果の上書き保存
@@ -165,4 +164,4 @@
 
 - 新規タスク追加時は上記形式（チェックボックス、詳細・依存・優先度）で追記する。
 - 日次で進捗確認、週次で完了タスク確認・未完了の再評価を行う。
-- **実装状況**: F01 はログイン・2URL GET・パーサー枠まで実装済み。パースは実際の HTML 仕様に合わせて parse-compass.ts / parse-live-course.ts にセレクタを追加する必要あり。F03（Google Calendar API）はプレースホルダ。`npm run sync` は .env の必須項目（AINA_*, GOOGLE_CALENDAR_ID 等）が揃っている必要あり。
+- **実装状況**: F01 はログイン・2URL GET・パーサー枠まで実装済み（パースは HTML 仕様に合わせてセレクタ追加が必要）。F03 は Google Calendar API（サービスアカウント）で insert/update/delete 実装済み。`npm run sync` は .env に AINA_*, GOOGLE_CALENDAR_ID, GOOGLE_APPLICATION_CREDENTIALS が必要。

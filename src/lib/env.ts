@@ -32,8 +32,10 @@ const envSchema = z.object({
     .url()
     .default("https://mypage.ai-na.co.jp/user/live-course"),
 
-  // Google Calendar
+  // Google Calendar（F03 用）
   GOOGLE_CALENDAR_ID: z.string().min(1, "GOOGLE_CALENDAR_ID is required"),
+  /** サービスアカウント JSON キーファイルのパス。未設定時は F03 でエラー。 */
+  GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
 
   // 前回取得結果の保存先（JSON ファイルのパス）
   STATE_FILE_PATH: z.string().default("./data/sync-state.json"),
